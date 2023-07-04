@@ -20,6 +20,11 @@ public class Tank : MonoBehaviour
 	public bool canMove = false;
 	public bool canAttack = false;
 
+	[Space, Header("Other")]
+	public GameObject missilePrefab;
+	public Transform shootPoint;
+
+
 	public void TakeDamage(float damage)
 	{
 		if (HP <= 0) return;

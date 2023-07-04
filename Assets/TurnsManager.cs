@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEditor.PackageManager;
 using UnityEngine;
@@ -39,6 +40,7 @@ public class TurnsManager : MonoBehaviour
 	public void ContinueTurn()
 	{
 		phaseTx.text = "Phase: " + currentTurnState.ToString();
+		
 
 		switch (turnPhase)
 		{
@@ -50,6 +52,8 @@ public class TurnsManager : MonoBehaviour
 				break;
 		}
 
+
+
 		switch (currentTurnState)
 		{
 			case TurnState.Movement:
@@ -60,7 +64,23 @@ public class TurnsManager : MonoBehaviour
 				AttackTurn();
 				break;
 		}
+		//StartCoroutine(WaitTurn());
 
+	}
+	private IEnumerator WaitTurn()
+    {
+        yield return new WaitForSeconds(1f);
+
+		switch (currentTurnState)
+		{
+			case TurnState.Movement:
+				MovementTurn();
+				break;
+
+			case TurnState.Attack:
+				AttackTurn();
+				break;
+		}
 	}
 
 	private void MovementTurn()
