@@ -68,9 +68,9 @@ public class PlayerTankController : MonoBehaviour
 		missile.GetComponent<Missile>().Init(shotVelocity, false);
 
 		tankComponent.canAttack = false;
-		TurnsManager.instance.turnCount++;
 		lineRenderer.enabled = false;
 		shotLocation.SetActive(false);
+		TurnsManager.instance.npcAI.UpdatePrecision(false);
 
 	}
 
@@ -131,8 +131,6 @@ public class PlayerTankController : MonoBehaviour
 			}
 
 		}
-
-
 
 	}
 

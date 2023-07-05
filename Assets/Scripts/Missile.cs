@@ -17,14 +17,13 @@ public class Missile : MonoBehaviour
 		rb.AddForce(velocity, ForceMode.Impulse);
 	}
 
-	public void OnCollisionEnter(Collision col)
+	private void OnCollisionEnter(Collision collision)
 	{
-		//Instantiate(poofPrefab, col.contacts[0].point, Quaternion.Euler(col.contacts[0].normal));
-		var explosion = Instantiate(explosionPrefab, col.contacts[0].point, Quaternion.Euler(col.contacts[0].normal));
+		var explosion = Instantiate(explosionPrefab, collision.contacts[0].point, Quaternion.Euler(collision.contacts[0].normal));
 		explosion.SetActive(true);
-		if (damagedTanks.Count>0)
+		if (damagedTanks.Count > 0)
 		{
-			foreach(Tank tank in damagedTanks)
+			foreach (Tank tank in damagedTanks)
 			{
 				tank.TakeDamage(20);
 			}
@@ -37,29 +36,18 @@ public class Missile : MonoBehaviour
 
 	private void OnTriggerEnter(Collider other)
 	{
-		if(other.TryGetComponent<Tank>(out Tank tankCol)) {
-
-			if(!damagedTanks.Contains(tankCol))
-			{
-				damagedTanks.Add(tankCol);
-			}
-
+		if (other.TryGetComponent(out Tank tank) && !damagedTanks.Contains(tank))
+		{
+			damagedTanks.Add(tank);
 		}
 	}
 
 	private void OnTriggerExit(Collider other)
 	{
-
-		if (other.TryGetComponent<Tank>(out Tank tankCol))
+		if (other.TryGetComponent(out Tank tank) && damagedTanks.Contains(tank))
 		{
-
-			if (damagedTanks.Contains(tankCol))
-			{
-				damagedTanks.Remove(tankCol);
-			}
-
+			damagedTanks.Remove(tank);
 		}
-
 	}
 
 }

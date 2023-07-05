@@ -7,7 +7,7 @@ public class TankAI : MonoBehaviour
 {
 
 	private  Tank tankComponent;
-	private float movePrecision = 75,shotPrecision = 100;
+	public float movePrecision = 100,shotPrecision = 80;
 	private float maxDistance = 13f;
 	[SerializeField]
 	private GameObject target;
@@ -23,107 +23,95 @@ public class TankAI : MonoBehaviour
 		navMeshAgent = GetComponent<NavMeshAgent>();
 	}
 
+	internal void SetPrecision(Vector2 npcPrecision)
+	{
+
+		movePrecision = npcPrecision.x;
+		shotPrecision = npcPrecision.y;
+
+	}
+	internal Vector2 GetPrecision()
+	{
+		return new Vector2(movePrecision, shotPrecision);
+	}
+
 	private void Update()
 	{
-		if (isMoving)
-		{
-			if (Vector3.Distance(transform.position, navMeshAgent.destination) < 0.5f)
-			{
-				isMoving = false;
-				TurnsManager.instance.ContinueTurn();
-			}
-		}
+		CheckMoving();
+	}
+
+	private void CheckMoving()
+	{
+		if (!isMoving) return;
+		if (Vector3.Distance(transform.position, navMeshAgent.destination) - navMeshAgent.stoppingDistance >= 0.5f) return;
+		isMoving = false;
+		TurnsManager.instance.ContinueTurn();
+	}
+	public void UpdatePrecision(bool more)
+	{
+		var movePrecisionAmount = more ? 10f : -7f;
+		movePrecision = Mathf.Clamp(movePrecision + movePrecisionAmount, 0f, 100f);
+		var shotPrecisionAmount = more ? 5f : -2f;
+		shotPrecision = Mathf.Clamp(shotPrecision + shotPrecisionAmount, 0f, 100f);
 	}
 
 	public void Move()
 	{
-		if (tankComponent.canMove)
-		{
-			Debug.Log("NPC is moving");
+		if (!tankComponent.canMove) return;
+		initialPosition = transform.position;
 
-			initialPosition = transform.position;
-
-			SetDestination(GenerateNewPosition());
-			isMoving = true;
-			tankComponent.canMove = false;
-		}
+		GenerateNewPosition();
+		isMoving = true;
+		tankComponent.canMove = false;
 	}
-
 	public void Attack()
 	{
-		if (tankComponent.canAttack)
-		{
-			Debug.Log("NPC is attacking");
-			Shot();
-			tankComponent.canAttack = false;
-		}
-
+		if (!tankComponent.canAttack) return;
+		Shot();
+		tankComponent.canAttack = false;
 	}
 
-	private void SetDestination(Vector3 destination)
+	private void GenerateNewPosition()
 	{
-		// Obtener una distancia de parada aleatoria entre 0 y maxDistance
-/*
-		if(Vector3.Distance(target.transform.position, destination) < maxDistance)
-		{
-			float stoppingDistance = Random.Range(0f, maxDistance);
-			// Establecer la distancia de parada en el NavMeshAgent
-			navMeshAgent.stoppingDistance = stoppingDistance;
-		}
-		else
-		{
-			navMeshAgent.stoppingDistance = 0;
-		}
-*/
-		// Establecer el destino en el NavMeshAgent
-		navMeshAgent.SetDestination(destination);
+		var direction = (target.transform.position - initialPosition);
+		var movePrecisionValue = (100f - movePrecision) / 100f;
+		var deviationVector = new Vector3(
+			Random.Range(-movePrecisionValue, movePrecisionValue) * 90,
+			0f,
+			Random.Range(-movePrecisionValue, movePrecisionValue) * 90
+		);
+		direction += deviationVector;
+		direction.Normalize();
+
+		//Calculates a random distance within maxDistance
+		var maxDistanceMultiplicator = Mathf.Clamp(Vector3.Distance(target.transform.position, transform.position) / maxDistance, 0f, 1f);
+		var distance = Mathf.Lerp(0f, maxDistance, maxDistanceMultiplicator);
+
+		// Calculates the new position by adding the deviation vector to the direction vector and multiplying the distance
+		var newPosition = initialPosition + Vector3.Scale(direction, new Vector3(1f, 0f, 1f)).normalized * distance;
+
+		navMeshAgent.SetDestination(newPosition);
+		navMeshAgent.stoppingDistance = (1f - maxDistanceMultiplicator) * 3f;
 	}
-
-	private Vector3 GenerateNewPosition()
-	{
-		// Obtener una posición aleatoria dentro de un radio máximo
-		Vector3 randomPosition = Random.insideUnitSphere * maxDistance;
-		randomPosition += initialPosition;
-
-		// Calcular la dirección hacia el objetivo
-		Vector3 direction = (target.transform.position - randomPosition).normalized;
-
-		// Calcular el porcentaje de precisión
-		float precisionPercentage = movePrecision / 100f;
-
-		// Calcular la posición ajustada según la precisión
-		Vector3 adjustedPosition = Vector3.Lerp(randomPosition, target.transform.position, precisionPercentage);
-
-		// Verificar si la posición ajustada se encuentra dentro del radio máximo
-		float adjustedDistance = Vector3.Distance(adjustedPosition, initialPosition);
-		if (adjustedDistance <= maxDistance)
-		{
-			return adjustedPosition;
-		}
-		else
-		{
-			// Si la posición ajustada está fuera del radio máximo, devolver la posición aleatoria original
-			return randomPosition;
-		}
-	}
-
 
 	private void Shot()
-	{
-		CalculateShot();
+    {
+        CalculateShot();
 
-		GameObject missile = Instantiate(tankComponent.missilePrefab, tankComponent.shootPoint.transform.position, tankComponent.shootPoint.parent.parent.rotation);
-		missile.SetActive(true);
+        var missile = Instantiate(tankComponent.missilePrefab, tankComponent.shootPoint.transform.position, tankComponent.shootPoint.parent.parent.rotation);
+        missile.SetActive(true);
 
-		missile.GetComponent<Missile>().Init(shotVelocity, false);
+        missile.GetComponent<Missile>().Init(shotVelocity, false);
 
-		tankComponent.canAttack = false;
-		TurnsManager.instance.turnCount++;
-	}
+        tankComponent.canAttack = false;
+    }
 
 	private void CalculateShot()
 	{
 		GameObject tower = tankComponent.shootPoint.parent.parent.gameObject;
+		float maxHeight = -70;
+		float minHeight = -45;
+		float height = -45;
 
 		// Calcular un punto aleatorio en una esfera unitaria
 		Vector3 randomPoint = Random.insideUnitSphere;
@@ -133,21 +121,56 @@ public class TankAI : MonoBehaviour
 
 		// Calcular la dirección hacia el punto de impacto
 		Vector3 direction = targetPoint - tower.transform.position;
+
+		float precision = 100 - shotPrecision;
+		direction.x += Random.Range(-precision, precision) / 100;
+		direction.z += Random.Range(-precision, precision) / 100;
 		direction.Normalize();
 
 		// Calcular la rotación en el eje Y hacia el punto de impacto
 		tower.transform.LookAt(targetPoint);
 
+		//calcular inclinacion
+		if (Vector3.Distance(target.transform.position, this.transform.position) < maxDistance + 1)
+		{
+			//lanzar rayo hacia el target para ver si colisiona con el o con un obstaculo
+
+			RaycastHit hit;
+			hit = new RaycastHit();
+			//debug draw this ray
+
+			Debug.DrawRay(tower.transform.position, direction * maxDistance, Color.red, 1f);
+
+
+			if (Physics.Raycast(tower.transform.position, direction, out hit, maxDistance))
+			{
+				if (hit.collider.gameObject.tag == "Player")
+				{
+					height = minHeight;
+				}
+				else
+				{
+					//aumentar height entre maxHeight y minHeight segun lo lejos que este el target
+
+					height = Mathf.Lerp(maxHeight, minHeight, Vector3.Distance(target.transform.position, this.transform.position) / maxDistance);
+
+				}
+			}
+			else
+			{
+				height = minHeight;
+			}
+
+		}
+
 		// Calcular la rotación en el eje X en función de la distancia
 		float distance = Vector3.Distance(tower.transform.position, targetPoint);
-		float tiltAngle = Mathf.Clamp(distance * distance * -0.5f, -45f, -10);
+		float tiltAngle = Mathf.Clamp(distance * distance * -0.5f, height, -10);
 		tower.transform.rotation *= Quaternion.Euler(tiltAngle, 0f, 0f);
 
 		shotSpeed = Vector3.Distance(tankComponent.shootPoint.transform.position, targetPoint) * 1.1f;
 		shotSpeed = Mathf.Clamp(shotSpeed, 4, 10);
 		shotVelocity = tankComponent.shootPoint.parent.parent.forward * shotSpeed;
 	}
-
-
 
 }

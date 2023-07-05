@@ -2,14 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum TankType
-{
-	NPC,
-	Player
-}
+
 
 public class Tank : MonoBehaviour
 {
+	public enum TankType
+	{
+		NPC,
+		Player
+	}
+
 	public TankType tankType;
 
 	[Space,Header("Tank Stats")]
@@ -53,14 +55,23 @@ public class Tank : MonoBehaviour
 		{
 			Die();
 		}
+
+		if(this.TryGetComponent(out TankAI tankAI)){
+
+			tankAI.UpdatePrecision(true);
+
+		}
+		else
+		{
+			TurnsManager.instance.npcAI.UpdatePrecision(false);
+		}
+
 	}
 
 	private void Die()
 	{
 
-		Debug.Log("Tank Die");
 		alive = false;
-		//Destroy(gameObject);
 
 	}
 
