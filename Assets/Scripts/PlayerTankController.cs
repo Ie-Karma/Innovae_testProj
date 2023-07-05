@@ -14,6 +14,14 @@ public class PlayerTankController : MonoBehaviour
 	private bool moving = false;
 	private LineRenderer lineRenderer;
 
+	//line display
+	private int lineSegments = 25;
+	private float timeBetweenPoints = 0.1f;
+	private float shotSpeed = 0;
+	private Vector3 shotVelocity;
+	[SerializeField]
+	private GameObject shotLocation;
+
 	private void Awake()
 	{
 		tankNav = GetComponent<NavMeshAgent>();
@@ -53,25 +61,18 @@ public class PlayerTankController : MonoBehaviour
 
 	private void Shot()
 	{
+
 		GameObject missile = Instantiate(tankComponent.missilePrefab, tankComponent.shootPoint.transform.position, tankComponent.shootPoint.parent.parent.rotation);
 		missile.SetActive(true);
 
-		GameObject tower = tankComponent.shootPoint.parent.parent.gameObject;
-		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-		RaycastHit hit;
-		Physics.Raycast(ray, out hit, 100f);
-
-		Vector3 targetPosition = hit.point;
-		Vector3 shootDirection = targetPosition - tankComponent.shootPoint.transform.position;
-
-		float distance = Vector3.Distance(tankComponent.shootPoint.transform.position, targetPosition);
-		float speed = distance * 1.5f;
-
-		missile.GetComponent<Missile>().Init(shootDirection.normalized * speed, false);
+		missile.GetComponent<Missile>().Init(shotVelocity, false);
 
 		tankComponent.canAttack = false;
 		TurnsManager.instance.turnCount++;
 		TurnsManager.instance.ContinueTurn();
+		lineRenderer.enabled = false;
+		shotLocation.SetActive(false);
+
 	}
 
 	private void CalculateShot()
@@ -90,14 +91,49 @@ public class PlayerTankController : MonoBehaviour
 
 		// Calcular la rotación en el eje X en función de la distancia
 		float distance = Vector3.Distance(tower.transform.position, hit.point);
-		float tiltAngle = Mathf.Clamp(distance * distance * -0.5f, -45f, 45f);
+		float tiltAngle = Mathf.Clamp(distance * distance * -0.5f, -75f, -10);
 		tower.transform.rotation *= Quaternion.Euler(tiltAngle, 0f, 0f);
-		CalculateLine(hit.point);
+
+		shotSpeed = Vector3.Distance(tankComponent.shootPoint.transform.position, hit.point) * 1.1f;
+		shotSpeed = Mathf.Clamp(shotSpeed, 4, 10);
+		shotVelocity = tankComponent.shootPoint.parent.parent.forward * shotSpeed;
+
+
+		CalculateLine();
 
 	}
 
-	private void CalculateLine(Vector3 targetPosition)
+	private void CalculateLine()
 	{
+		lineRenderer.enabled = true;
+		shotLocation.SetActive(true);
+		lineRenderer.positionCount = Mathf.CeilToInt(lineSegments/timeBetweenPoints)+1;
+
+		Vector3 startPos = tankComponent.shootPoint.position;
+		int i = 0;
+		Vector3 pos = Vector3.zero;
+		lineRenderer.SetPosition(i, startPos);
+
+		for (float t = 0; t < lineSegments; t += timeBetweenPoints)
+		{
+			i++;
+			pos = startPos + t * shotVelocity;
+			pos.y = startPos.y + shotVelocity.y * t + 0.5f * Physics.gravity.y * t * t;
+			lineRenderer.SetPosition(i, pos);
+
+			Vector3 lastPosition = lineRenderer.GetPosition(i - 1);
+
+			if (Physics.Raycast(lastPosition, (pos - lastPosition).normalized, out RaycastHit hit, (pos - lastPosition).magnitude))
+			{
+				lineRenderer.SetPosition(i, hit.point);
+				lineRenderer.positionCount = i + 1;
+				shotLocation.transform.position = hit.point;
+				return;
+			}
+
+		}
+
+
 
 	}
 
