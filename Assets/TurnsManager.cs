@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum TurnState
 {
@@ -16,7 +17,9 @@ public class TurnsManager : MonoBehaviour
 	private TankAI npcAI;
 
 	[SerializeField]
-	private TextMeshProUGUI turnTx, playerTx, phaseTx;
+	private TextMeshProUGUI turnTx, playerTx, phaseTx, endTx;
+	[SerializeField]
+	private Slider npc_hp, player_hp;
 
 	//if turnPhase = 0 is NPC turn, if turnPhase = 1 is Player turn
 	public int turnCount = 1;
@@ -39,48 +42,76 @@ public class TurnsManager : MonoBehaviour
 
 	public void ContinueTurn()
 	{
-		phaseTx.text = "Phase: " + currentTurnState.ToString();
-		
-
-		switch (turnPhase)
+		if (npcTank.alive && playerTank.alive)
 		{
-			case 0:
-				playerTx.text = "NPC";
-				break;
-			case 1:
-				playerTx.text = "Player";
-				break;
+			phaseTx.text = "Phase: " + currentTurnState.ToString();
+
+			switch (turnPhase)
+			{
+				case 0:
+					playerTx.text = "NPC";
+					break;
+				case 1:
+					playerTx.text = "Player";
+					break;
+			}
+
+
+
+			switch (currentTurnState)
+			{
+				case TurnState.Movement:
+					MovementTurn();
+					break;
+
+				case TurnState.Attack:
+					AttackTurn();
+					break;
+			}
+
+			player_hp.value = playerTank.HP;
+			npc_hp.value = npcTank.HP;
 		}
-
-
-
-		switch (currentTurnState)
+		else
 		{
-			case TurnState.Movement:
-				MovementTurn();
-				break;
+			endTx.transform.parent.gameObject.SetActive(true);
 
-			case TurnState.Attack:
-				AttackTurn();
-				break;
+			player_hp.value = playerTank.HP;
+			npc_hp.value = npcTank.HP;
+
+			if (!npcTank.alive &&  !playerTank.alive)
+			{
+				endTx.text = "nobody wins(?)";
+			}
+
+			if (!npcTank.alive)
+			{
+				endTx.text = "You win";
+			}
+			if (!playerTank.alive)
+			{
+				endTx.text = "NPC wins";
+			}
+
+			npcTank.gameObject.SetActive(false);
+			playerTank.gameObject.SetActive(false);
+
 		}
-		//StartCoroutine(WaitTurn());
 
 	}
-	private IEnumerator WaitTurn()
-    {
-        yield return new WaitForSeconds(1f);
 
-		switch (currentTurnState)
-		{
-			case TurnState.Movement:
-				MovementTurn();
-				break;
-
-			case TurnState.Attack:
-				AttackTurn();
-				break;
-		}
+	public void RestartGame()
+	{
+		endTx.transform.parent.gameObject.SetActive(false);
+		turnCount = 0;
+		turnPhase = 0;
+		currentTurnState = TurnState.Movement;
+		npcTank.ResetTank();
+		playerTank.ResetTank();
+		player_hp.value = playerTank.HP;
+		npc_hp.value = npcTank.HP;
+		turnTx.text = "Turn: " + turnCount.ToString();
+		ContinueTurn();
 	}
 
 	private void MovementTurn()
