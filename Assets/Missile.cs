@@ -24,6 +24,7 @@ public class Missile : MonoBehaviour
 		//Instantiate(poofPrefab, col.contacts[0].point, Quaternion.Euler(col.contacts[0].normal));
 		var explosion = Instantiate(explosionPrefab, col.contacts[0].point, Quaternion.Euler(col.contacts[0].normal));
 		explosion.SetActive(true);
+		TurnsManager.instance.ContinueTurn();
 		Destroy(gameObject);
 	}
 }

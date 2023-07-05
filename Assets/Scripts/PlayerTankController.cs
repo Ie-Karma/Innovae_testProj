@@ -9,7 +9,7 @@ public class PlayerTankController : MonoBehaviour
 	[SerializeField]
 	private LayerMask groundMask;
 	private NavMeshAgent tankNav;
-	private float maxDistance = 12.50f;
+	private float maxDistance = 13f;
 	private Tank tankComponent;
 	private bool moving = false;
 	private LineRenderer lineRenderer;
@@ -69,7 +69,6 @@ public class PlayerTankController : MonoBehaviour
 
 		tankComponent.canAttack = false;
 		TurnsManager.instance.turnCount++;
-		TurnsManager.instance.ContinueTurn();
 		lineRenderer.enabled = false;
 		shotLocation.SetActive(false);
 
@@ -91,7 +90,7 @@ public class PlayerTankController : MonoBehaviour
 
 		// Calcular la rotación en el eje X en función de la distancia
 		float distance = Vector3.Distance(tower.transform.position, hit.point);
-		float tiltAngle = Mathf.Clamp(distance * distance * -0.5f, -75f, -10);
+		float tiltAngle = Mathf.Clamp(distance * distance * -0.5f, -70, -10);
 		tower.transform.rotation *= Quaternion.Euler(tiltAngle, 0f, 0f);
 
 		shotSpeed = Vector3.Distance(tankComponent.shootPoint.transform.position, hit.point) * 1.1f;
@@ -142,6 +141,8 @@ public class PlayerTankController : MonoBehaviour
 		//get the mouse position
 		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 		RaycastHit hit;
+
+		Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, 5f);
 
 		if (Physics.Raycast(ray, out hit, 100f, groundMask))
 		{
