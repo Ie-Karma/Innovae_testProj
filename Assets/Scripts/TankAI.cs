@@ -122,7 +122,7 @@ public class TankAI : MonoBehaviour
 		// Calcular la dirección hacia el punto de impacto
 		Vector3 direction = targetPoint - tower.transform.position;
 
-		float precision = 100 - shotPrecision;
+		float precision = (100 - shotPrecision)/20;
 		direction.x += Random.Range(-precision, precision) / 100;
 		direction.z += Random.Range(-precision, precision) / 100;
 		direction.Normalize();

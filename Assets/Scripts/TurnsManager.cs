@@ -1,6 +1,4 @@
-using System.Collections;
 using TMPro;
-using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -49,12 +47,11 @@ public class TurnsManager : MonoBehaviour
 
 	private void LoadSavedData()
 	{
-		bestScore = PlayerPrefs.GetInt("bestScore");
-		npcPrecision = new Vector2(PlayerPrefs.GetFloat("npcPrecision_M"), PlayerPrefs.GetFloat("npcPrecision_S"));
+		bestScore = PlayerPrefs.GetInt("bestScore", 0);
+		npcPrecision = new Vector2(PlayerPrefs.GetFloat("npcPrecision_M", 50), PlayerPrefs.GetFloat("npcPrecision_S", 50));
 		npcAI.SetPrecision(npcPrecision);
 		bestTx.text = "Best game: " + bestScore + " turns.";
-
-		npc_lvl.value = (npcPrecision.x + npcPrecision.y) / 2; 
+		npc_lvl.value = (npcPrecision.x + npcPrecision.y) / 2;
 	}
 
 	private void SaveData()
